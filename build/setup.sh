@@ -44,7 +44,10 @@ init_build() {
     KSU="$(norm_bool "${KSU:-false}")"
     SUSFS="$(norm_bool "${SUSFS:-false}")"
     LXC="$(norm_bool "${LXC:-false}")"
-    STOCK_CONFIG="$(norm_default "${STOCK_CONFIG-}" "true")"
+
+    STOCK_CONFIG_DEFAULT="true"
+    [[ "$BUILD_TARGET" == "xaga" ]] && STOCK_CONFIG_DEFAULT="false"
+    STOCK_CONFIG="$(norm_default "${STOCK_CONFIG-}" "$STOCK_CONFIG_DEFAULT")"
 
     # Compiler setup
     setup_ccache

@@ -55,13 +55,11 @@ case "$BUILD_TARGET" in
         KERNEL_REPO="github.com:ESK-Project/android_kernel_xiaomi_mt6895@${BRANCH_OVERRIDE:-16.2-rebase}"
         AK3_REPO="github.com:ESK-Project/AnyKernel3@xaga"
         RELEASE_REPO="ESK-Project/esk-releases"
-        BOOT_MODE="single"
         ;;
     generic)
         KERNEL_REPO="github.com:ESK-Project/android12-5.10-gki@${BRANCH_OVERRIDE:-rebase}"
         AK3_REPO="github.com:ESK-Project/AnyKernel3@generic"
         RELEASE_REPO="ESK-Project/gki-releases"
-        BOOT_MODE="multi"
         ;;
     *)
         echo "Unknown build target: $BUILD_TARGET" >&2

@@ -56,6 +56,10 @@ package_bootimg() {
 
     step "Package boot image"
 
+    if [[ "$BUILD_TARGET" == "xaga" ]]; then
+        info "Skip boot image build for xaga"
+    fi
+
     local package_name="$1"
     local partition_size=$((64 * 1024 * 1024))
 
@@ -67,25 +71,16 @@ package_bootimg() {
     "$MKBOOTIMG/unpack_bootimg.py" --boot_img="boot-5.10.img"
     cp -p "$KERNEL_OUT/arch/arm64/boot/Image" ./Image
 
-    if [[ $BOOT_MODE == "multi" ]]; then
-        gzip -n -k -f -9 Image
-        lz4 -f -l --favor-decSpeed Image Image.lz4
+    gzip -n -k -f -9 Image
+    lz4 -f -l --favor-decSpeed Image Image.lz4
 
-        make_boot "Image" "boot-raw.img"
-        make_boot "Image.gz" "boot-gz.img"
-        make_boot "Image.lz4" "boot-lz4.img"
+    make_boot "Image" "boot-raw.img"
+    make_boot "Image.gz" "boot-gz.img"
+    make_boot "Image.lz4" "boot-lz4.img"
 
-        cp "$BOOT_IMAGE/boot-raw.img" "$OUT_DIR/$package_name-boot-raw.img"
-        cp "$BOOT_IMAGE/boot-gz.img" "$OUT_DIR/$package_name-boot-gz.img"
-        cp "$BOOT_IMAGE/boot-lz4.img" "$OUT_DIR/$package_name-boot-lz4.img"
-
-        popd > /dev/null
-        return
-    fi
-
-    gzip -n -f -9 Image
-    make_boot "Image.gz" "boot.img"
-    cp "$BOOT_IMAGE/boot.img" "$OUT_DIR/$package_name-boot.img"
+    cp "$BOOT_IMAGE/boot-raw.img" "$OUT_DIR/$package_name-boot-raw.img"
+    cp "$BOOT_IMAGE/boot-gz.img" "$OUT_DIR/$package_name-boot-gz.img"
+    cp "$BOOT_IMAGE/boot-lz4.img" "$OUT_DIR/$package_name-boot-lz4.img"
 
     popd > /dev/null
 }
