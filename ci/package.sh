@@ -58,6 +58,7 @@ package_bootimg() {
 
     if [[ "$BUILD_TARGET" == "xaga" ]]; then
         info "Skip boot image build for xaga"
+        return
     fi
 
     local package_name="$1"

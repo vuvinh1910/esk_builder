@@ -19,19 +19,42 @@ setup_ccache() {
     ccache --show-config
 }
 
+gen_wrapper() {
+    local tool="$1"
+    local fake_time="2026-03-14 12:00:00"
+
+    cat > "$WORKSPACE/build/$tool" << EOF
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+WORKSPACE="\$(cd -- "\$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+
+export LD_PRELOAD="\$LIBFAKESTAT \$LIBFAKETIME"
+export FAKESTAT="$fake_time"
+export FAKETIME="@$fake_time"
+
+exec "\$WORKSPACE/clang/bin/$tool" "\$@"
+EOF
+
+    chmod +x "$WORKSPACE/build/$tool"
+}
+
 setup_ld_preload() {
     export LIBFAKETIME
     LIBFAKETIME=$(find /usr/lib* /lib* -name libfaketimeMT.so.1 -print -quit 2> /dev/null || true)
     export LIBFAKESTAT
 
-    [[ -f "$LIBFAKESTAT" ]] && return 0
+    if [[ ! -f "$LIBFAKESTAT" ]]; then
+        local archive="$WORKSPACE/libfakestat.tar.gz"
+        mkdir -p "$LIBFAKESTAT_DIR"
 
-    local archive="$WORKSPACE/libfakestat.tar.gz"
-    mkdir -p "$LIBFAKESTAT_DIR"
+        curl -fsSLo "$archive" "$LIBFAKESTAT_URL"
+        tar -xzf "$archive" -C "$LIBFAKESTAT_DIR"
+        rm -f "$archive"
+    fi
 
-    curl -fsSLo "$archive" "$LIBFAKESTAT_URL"
-    tar -xzf "$archive" -C "$LIBFAKESTAT_DIR"
-    rm -f "$archive"
+    [[ -f "$WORKSPACE/build/clang" ]] || gen_wrapper clang
+    [[ -f "$WORKSPACE/build/ld.lld" ]] || gen_wrapper ld.lld
 }
 
 init_build() {
@@ -130,27 +153,16 @@ setup_toolchain() {
 
     mkdir -p "$CLANG"
 
-    local attempt=0
-    local retries=5
     local aria_opts=(
-        -q -c -x16 -s16 -k8M
+        -q -c -x16 -s16 -k8M -m 5 --retry-wait=5
         --file-allocation=falloc --check-certificate=false
         -d "$WORKSPACE" -o "clang-archive" "$clang_url"
     )
 
-    while ((attempt < retries)); do
-        if aria2c "${aria_opts[@]}"; then
-            success "Clang download successful!"
-            break
-        fi
-
-        ((attempt++))
-        warn "Clang download attempt $attempt/$retries failed, retrying..."
-        ((attempt < retries)) && sleep 5
-    done
-
-    if ((attempt == retries)); then
-        error "Clang download failed after $retries attempts!"
+    if aria2c "${aria_opts[@]}"; then
+        success "Clang download successful!"
+    else
+        error "Clang download failed."
     fi
 
     tar -xzf "$WORKSPACE/clang-archive" -C "$CLANG"

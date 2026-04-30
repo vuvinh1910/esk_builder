@@ -48,7 +48,7 @@ SUSFS_REPO="gitlab.com:simonpunk/susfs4ksu@gki-android12-5.10"
 
 # Other sources
 GKI_URL="https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2025-09_r1.zip"
-LIBFAKESTAT_URL="https://github.com/cctv18/libfakestat/releases/download/libfakestat-build-251027213612/libfakestat.tar.gz"
+LIBFAKESTAT_URL="https://github.com/cctv18/libfakestat/releases/download/libfakestat-build-260416190945/libfakestat.tar.gz"
 
 case "$BUILD_TARGET" in
     xaga)
