@@ -57,7 +57,6 @@ package_bootimg() {
     step "Package boot image"
 
     if [[ "$BUILD_TARGET" == "xaga" ]]; then
-        info "Skip boot image build for xaga"
         return
     fi
 
@@ -137,6 +136,9 @@ telegram_notify() {
     notify_success "$ak3_package" "$build_time" "anykernel3"
 
     # Boot image
+    if [[ "$BUILD_TARGET" == "xaga" ]]; then
+        return
+    fi
     pushd "$OUT_DIR" > /dev/null
     zip -9q -T "$package_name-boot.zip" "$package_name"-boot*.img
     popd > /dev/null

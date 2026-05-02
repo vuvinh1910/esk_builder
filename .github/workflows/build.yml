@@ -156,6 +156,7 @@ jobs:
 
       - name: Upload boot image artifact
         uses: actions/upload-artifact@v6
+        if: inputs.BUILD_TARGET == 'generic'
         with:
           name: ${{ steps.build.outputs.name }}-${{ steps.build.outputs.variant }}-boot
           path: ${{ steps.build.outputs.out_dir }}/${{ steps.build.outputs.package_name }}-boot*.img
