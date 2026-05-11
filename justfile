@@ -18,10 +18,19 @@ fmt:
 fmt-check:
     git ls-files -z '*.sh' | xargs -0r shfmt -d -i 4 -ci -bn -sr
 
+bash-check:
+    git ls-files -z '*.sh' | xargs -0r bash -n
+
 lint:
     git ls-files -z '*.sh' | xargs -0r shellcheck -x
 
-check: fmt-check lint
+py-lint:
+    cd py && uv run ruff check src pyproject.toml
+
+py-check:
+    cd py && uv run python -m basedpyright src
+
+check: fmt-check bash-check lint py-lint py-check
 
 git-status:
     git status --short --branch

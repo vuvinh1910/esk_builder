@@ -60,6 +60,9 @@ package_bootimg() {
         return
     fi
 
+    # Only needed for generic boot image packaging.
+    validate_deps bootimg
+
     local package_name="$1"
     local partition_size=$((64 * 1024 * 1024))
 
@@ -88,12 +91,11 @@ package_bootimg() {
 write_metadata() {
     step "Write metadata"
 
-    META_PY="$WORKSPACE/py/meta.py"
     META_FILE="$WORKSPACE/github.json"
 
     local package_name="$1"
 
-    python3 "$META_PY" \
+    py_cli meta write \
         "$META_FILE" \
         "$KERNEL_VERSION" "$KERNEL_NAME" "$COMPILER_STRING" \
         "$package_name" "$VARIANT" "$KERNEL_NAME" "$OUT_DIR" \

@@ -57,7 +57,7 @@ jobs:
       KSU: ${{ matrix.variant.KSU }}
       SUSFS: ${{ matrix.variant.SUSFS }}
       LXC: ${{ matrix.variant.LXC }}
-      STOCK_CONFIG: true
+      STOCK_CONFIG: auto
       TG_NOTIFY: false
 
   release:
@@ -76,6 +76,12 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           path: release_files
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Python 3.14
+        run: uv python install 3.14
 
       - name: Import build metadata
         run: |
@@ -103,9 +109,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           RELEASE_REPO: ${{ env.RELEASE_REPO }}
         run: |
-          TAG_PY="$GITHUB_WORKSPACE/py/tag.py"
+          UV_PROJECT="$GITHUB_WORKSPACE/py"
 
-          RELEASE_TAG=$(python3 "$TAG_PY" "$RELEASE_REPO")
+          RELEASE_TAG=$(uv run --project "$UV_PROJECT" tools release next-tag "$RELEASE_REPO")
 
           echo "New tag: $RELEASE_TAG"
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
@@ -153,7 +159,7 @@ jobs:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: |
-          TG_PY="$GITHUB_WORKSPACE/py/tg.py"
+          UV_PROJECT="$GITHUB_WORKSPACE/py"
         
           escape_md_v2() {
             python3 - "$*" <<'PY'
@@ -173,4 +179,4 @@ jobs:
           EOF
           )
           
-          printf '%s' "$message" | python3 "$TG_PY" msg
+          printf '%s' "$message" | uv run --project "$UV_PROJECT" tools tg msg

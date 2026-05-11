@@ -1,20 +1,26 @@
-name: Bash Check
+name: Check
 
 on:
   pull_request:
     paths:
       - "**/*.sh"
+      - "py/**/*.py"
+      - "py/pyproject.toml"
+      - "py/uv.lock"
       - "justfile"
       - ".github/workflows/check.yml"
   push:
     paths:
       - "**/*.sh"
+      - "py/**/*.py"
+      - "py/pyproject.toml"
+      - "py/uv.lock"
       - "justfile"
       - ".github/workflows/check.yml"
   workflow_dispatch:
 
 jobs:
-  check:
+  bash:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,5 +32,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y just shellcheck shfmt
 
-      - name: Run checks
-        run: just check
+      - name: Run bash checks
+        run: just fmt-check bash-check lint
+
+  python:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install python 3.14
+        run: uv python install 3.14
+
+      - name: Sync python dependencies
+        run: uv sync --project py --group dev
+
+      - name: Install required dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y just
+
+      - name: Run python checks
+        run: just py-lint py-check

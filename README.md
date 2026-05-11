@@ -10,7 +10,7 @@ pulls sources and tools, applies optional patches, then builds and packages the 
 - config.sh: defaults, repos, paths, and target settings
 - build/: setup, patching, and compile kernel
 - ci/: packaging, metadata, modules, and telegram helpers
-- py/: small python helpers
+- py/: uv-managed python helpers
 - modules/: modules.load for xaga modules packaging
 - kernel_patches/: kernel patches
 - .github/workflows/: ci and release workflows
@@ -20,13 +20,13 @@ pulls sources and tools, applies optional patches, then builds and packages the 
 ubuntu/debian:
 
 ```bash
-sudo apt install bc bison ccache curl flex git tar wget aria2 jq zip zstd upx build-essential python3-requests libfaketime lz4 just
+sudo apt install bc bison ccache curl flex git tar wget aria2 jq zip zstd upx build-essential libfaketime lz4 just shellcheck shfmt uv
 ````
 
 fedora:
 
 ```bash
-sudo dnf install bc bison ccache curl flex git tar wget aria2 jq zip zstd upx make python3-requests libfaketime lz4 just
+sudo dnf install bc bison ccache curl flex git tar wget aria2 jq zip zstd upx make libfaketime lz4 just ShellCheck shfmt uv
 ```
 
 ## run
@@ -53,6 +53,12 @@ run checks:
 just check
 ```
 
+python type check:
+
+```bash
+just py-check
+```
+
 clean build:
 
 ```bash
@@ -67,7 +73,7 @@ just clean
 | KSU             | enable kernelsu                                | bool |
 | SUSFS           | enable susfs                                   | bool |
 | LXC             | apply the lxc patch, xaga only                 | bool |
-| STOCK_CONFIG    | apply the stock config patch                   | bool |
+| STOCK_CONFIG    | stock config mode                              | str  |
 | BRANCH_OVERRIDE | use a different kernel branch                  | str  |
 | JOBS            | set make job count                             | int  |
 | RESET_SOURCES   | re-clone sources and tools before building     | bool |
@@ -79,6 +85,8 @@ just clean
 notes:
 
 - bool accepts true/false, t/f, yes/no, y/n, on/off, 1/0
+- STOCK_CONFIG accepts `auto`, `true`, or `false`
+- `auto` means off for xaga and on for generic
 - SUSFS needs KSU=true
 - LXC only works with BUILD_TARGET=xaga
 - TG_NOTIFY=true needs TG_BOT_TOKEN and TG_CHAT_ID
@@ -89,7 +97,6 @@ notes:
 | ----------------------------- | ----------------------- |
 | work/                         | kernel out              |
 | out/\<package>-AnyKernel3.zip | flashable package       |
-| out/\<package>-boot.img       | xaga boot image         |
 | out/\<package>-boot-raw.img   | generic raw boot image  |
 | out/\<package>-boot-gz.img    | generic gzip boot image |
 | out/\<package>-boot-lz4.img   | generic lz4 boot image  |

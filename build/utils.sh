@@ -5,20 +5,33 @@
 # Utility functions
 ################################################################################
 
-# Logging
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-BOLD='\033[1m'
-NC='\033[0m'
+source "$WORKSPACE/logging.sh"
 
-info() { printf '%b\n' "${BLUE}[$(date '+%F %T')] [INFO]${NC} $*"; }
-success() { printf '%b\n' "${GREEN}[$(date '+%F %T')] [SUCCESS]${NC} $*"; }
-warn() { printf '%b\n' "${YELLOW}[$(date '+%F %T')] [WARN]${NC} $*"; }
-step() {
-    local message="$1"
-    printf '%b\n' "${BOLD}[$(date '+%F %T')] [STEP ${STEP}] ${message}${NC}"
+require_cmds() {
+    local cmd
+    local missing_cmds=()
+
+    for cmd in "$@"; do
+        if command -v "$cmd" > /dev/null 2>&1; then
+            continue
+        fi
+        missing_cmds+=("$cmd")
+    done
+
+    if ((${#missing_cmds[@]} != 0)); then
+        fatal "Missing required command(s): ${missing_cmds[*]}"
+    fi
+}
+
+py_cli() {
+    uv run --project "$WORKSPACE/py" tools "$@"
+}
+
+# Fetch a release asset URL from a GitHub release API response.
+github_release_asset_url() {
+    local api_url="$1"
+    local pattern="$2"
+    py_cli release asset-url "$pattern" --api-url "$api_url"
 }
 
 # Escape text for MarkdownV2
@@ -34,12 +47,17 @@ PY
 }
 
 # Boolean helpers
-norm_bool() {
-    local value=$1
+resolve_bool() {
+    local value="${1-}"
+    local default_value="${2-}"
+
     case "${value,,}" in
+        "" | auto) echo "${default_value:-false}" ;;
         1 | y | yes | t | true | on) echo "true" ;;
         0 | n | no | f | false | off) echo "false" ;;
-        *) echo "false" ;;
+        *)
+            fatal "Invalid boolean value: $value"
+            ;;
     esac
 }
 
@@ -55,12 +73,6 @@ parse_bool() {
     fi
 }
 
-# Normalize bool from input value, defaulting if empty
-norm_default() {
-    local value="${1:-$2}"
-    norm_bool "$value"
-}
-
 # Check if script is running in Github Action
 is_ci() {
     [[ ${GITHUB_ACTIONS:-} == "true" ]]
@@ -69,7 +81,9 @@ is_ci() {
 # Recreate directory
 reset_dir() {
     local path="$1"
-    [[ -d $path ]] && rm -rf -- "$path"
+    if [[ -d $path ]]; then
+        rm -rf -- "$path"
+    fi
     mkdir -p -- "$path"
 }
 

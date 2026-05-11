@@ -32,6 +32,12 @@ BUILD_TARGET="${BUILD_TARGET:-xaga}"
 # Clang LTO mode: thin | full
 CLANG_LTO="thin"
 
+KSU_DEFAULT="false"
+SUSFS_DEFAULT="false"
+LXC_DEFAULT="false"
+TG_NOTIFY_DEFAULT="false"
+RESET_SOURCES_DEFAULT="false"
+
 # Parallel build jobs (override: JOBS=16 ./build.sh)
 JOBS="${JOBS:-$(nproc --all)}"
 
@@ -48,18 +54,20 @@ SUSFS_REPO="gitlab.com:simonpunk/susfs4ksu@gki-android12-5.10"
 
 # Other sources
 GKI_URL="https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2025-09_r1.zip"
-LIBFAKESTAT_URL="https://github.com/cctv18/libfakestat/releases/download/libfakestat-build-260416190945/libfakestat.tar.gz"
+LIBFAKESTAT_RELEASE_API="https://api.github.com/repos/cctv18/libfakestat/releases/latest"
 
 case "$BUILD_TARGET" in
     xaga)
         KERNEL_REPO="github.com:ESK-Project/android_kernel_xiaomi_mt6895@${BRANCH_OVERRIDE:-16.2-rebase}"
         AK3_REPO="github.com:ESK-Project/AnyKernel3@xaga"
         RELEASE_REPO="ESK-Project/esk-releases"
+        STOCK_CONFIG_DEFAULT="false"
         ;;
     generic)
         KERNEL_REPO="github.com:ESK-Project/android12-5.10-gki@${BRANCH_OVERRIDE:-main}"
         AK3_REPO="github.com:ESK-Project/AnyKernel3@generic"
         RELEASE_REPO="ESK-Project/gki-releases"
+        STOCK_CONFIG_DEFAULT="true"
         ;;
     *)
         echo "Unknown build target: $BUILD_TARGET" >&2

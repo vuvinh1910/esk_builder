@@ -1,5 +1,6 @@
 # Build outputs
 /out/
+/work/
 /boot_image/
 /clang/
 /kernel/
@@ -8,11 +9,23 @@
 /mkbootimg/
 /susfs/
 /staged/
-*.log
+/build.log
 /github.env
 /github.json
 /.ccache/
 /libfakestat/
+
+# Editor state
 /.vscode/
+*.swp
+*.swo
+*~
+
+# Python
 /modules/flatten/
 /modules/staging/
+/py/.venv/
+/py/.python-version
+/py/**/__pycache__/
+/py/.mypy_cache/
+/py/.ruff_cache/

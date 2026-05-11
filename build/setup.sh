@@ -46,31 +46,48 @@ setup_ld_preload() {
 
     if [[ ! -f "$LIBFAKESTAT" ]]; then
         local archive="$WORKSPACE/libfakestat.tar.gz"
+        local libfakestat_url
         mkdir -p "$LIBFAKESTAT_DIR"
 
-        curl -fsSLo "$archive" "$LIBFAKESTAT_URL"
+        validate_env github
+
+        libfakestat_url=$(github_release_asset_url "$LIBFAKESTAT_RELEASE_API" "libfakestat.tar.gz")
+
+        curl -fsSLo "$archive" "$libfakestat_url"
         tar -xzf "$archive" -C "$LIBFAKESTAT_DIR"
         rm -f "$archive"
     fi
 
-    [[ -f "$WORKSPACE/build/clang" ]] || gen_wrapper clang
-    [[ -f "$WORKSPACE/build/ld.lld" ]] || gen_wrapper ld.lld
+    if [[ ! -f "$WORKSPACE/build/clang" ]]; then
+        gen_wrapper clang
+    fi
+
+    if [[ ! -f "$WORKSPACE/build/ld.lld" ]]; then
+        gen_wrapper ld.lld
+    fi
 }
 
 init_build() {
     step "Init build"
 
+    if is_ci; then
+        TG_NOTIFY_DEFAULT="true"
+        RESET_SOURCES_DEFAULT="true"
+    fi
+
+    KSU="$(resolve_bool "${KSU-}" "$KSU_DEFAULT")"
+    SUSFS="$(resolve_bool "${SUSFS-}" "$SUSFS_DEFAULT")"
+    LXC="$(resolve_bool "${LXC-}" "$LXC_DEFAULT")"
+    STOCK_CONFIG="$(resolve_bool "${STOCK_CONFIG-}" "$STOCK_CONFIG_DEFAULT")"
+
+    TG_NOTIFY="$(resolve_bool "${TG_NOTIFY-}" "$TG_NOTIFY_DEFAULT")"
+    RESET_SOURCES="$(resolve_bool "${RESET_SOURCES-}" "$RESET_SOURCES_DEFAULT")"
+
+    # before the build starts
+    validate_deps base
+
     BUILD_TAG="kernel_$(hexdump -v -e '/1 "%02x"' -n4 /dev/urandom)"
     info "Build tag generated: $BUILD_TAG"
-
-    # Kernel flavour
-    KSU="$(norm_bool "${KSU:-false}")"
-    SUSFS="$(norm_bool "${SUSFS:-false}")"
-    LXC="$(norm_bool "${LXC:-false}")"
-
-    STOCK_CONFIG_DEFAULT="true"
-    [[ "$BUILD_TARGET" == "xaga" ]] && STOCK_CONFIG_DEFAULT="false"
-    STOCK_CONFIG="$(norm_default "${STOCK_CONFIG-}" "$STOCK_CONFIG_DEFAULT")"
 
     # Compiler setup
     setup_ccache
@@ -82,15 +99,6 @@ init_build() {
         CC="ccache clang" CROSS_COMPILE="aarch64-linux-gnu-"
         LLVM="1" LD="ld.lld"
     )
-
-    # Environment default setting
-    TG_NOTIFY="$(norm_default "${TG_NOTIFY-}" "false")"
-    RESET_SOURCES="$(norm_default "${RESET_SOURCES-}" "false")"
-
-    if is_ci; then
-        TG_NOTIFY="$(norm_default "${TG_NOTIFY-}" "true")"
-        RESET_SOURCES="$(norm_default "${RESET_SOURCES-}" "true")"
-    fi
 
     info "Building in $(is_ci && echo CI || echo local)"
 
@@ -141,21 +149,21 @@ setup_toolchain() {
         return 0
     fi
 
+    validate_env github
+
     info "Fetching AOSP Clang toolchain"
     local clang_url
-    local auth_header=()
-    [[ -n ${GH_TOKEN:-} ]] && auth_header=(-H "Authorization: Bearer $GH_TOKEN")
-    clang_url=$(curl -fsSL "https://api.github.com/repos/bachnxuan/aosp_clang_mirror/releases/latest" \
-        "${auth_header[@]}" \
-        | grep "browser_download_url" \
-        | grep ".tar.gz" \
-        | cut -d '"' -f 4)
+    clang_url=$(
+        github_release_asset_url \
+            "https://api.github.com/repos/bachnxuan/aosp_clang_mirror/releases/latest" \
+            "clang-r*.tar.gz"
+    )
 
     mkdir -p "$CLANG"
 
     local aria_opts=(
         -q -c -x16 -s16 -k8M -m 5 --retry-wait=5
-        --file-allocation=falloc --check-certificate=false
+        --file-allocation=falloc
         -d "$WORKSPACE" -o "clang-archive" "$clang_url"
     )
 
@@ -169,4 +177,71 @@ setup_toolchain() {
     rm -f "$WORKSPACE/clang-archive"
 
     _use_toolchain
+}
+
+apply_susfs() {
+    info "Apply SuSFS kernel-side patches"
+
+    local susfs_dir="$SUSFS_DIR"
+    local susfs_patches="$susfs_dir/kernel_patches"
+
+    git_clone "$SUSFS_REPO" "$susfs_dir"
+    cp -R "$susfs_patches"/fs/* ./fs
+    cp -R "$susfs_patches"/include/* ./include
+
+    patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$susfs_patches"/50_add_susfs_in_gki-android*-*.patch
+
+    SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
+
+    config --enable CONFIG_KSU_SUSFS
+
+    success "SuSFS applied!"
+}
+
+prepare_build() {
+    step "Prepare build"
+
+    # Validate feature combinations before patching/build prep.
+    validate_env config
+
+    if is_true "$SUSFS" || is_true "$LXC" || is_true "$STOCK_CONFIG"; then
+        # Only needed when patches may be applied.
+        validate_deps patching
+    fi
+
+    cd "$KERNEL"
+
+    # Defconfig existence check
+    local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+    if [[ ! -f $defconfig_file ]]; then
+        error "Defconfig not found: $KERNEL_DEFCONFIG"
+    fi
+
+    if is_true "$KSU"; then
+        info "Setup KernelSU"
+        install_ksu "ESK-Project/ReSukiSU" "main"
+        config --enable CONFIG_KSU
+        success "KernelSU added"
+    fi
+
+    # SuSFS
+    if is_true "$SUSFS"; then
+        apply_susfs
+    else
+        config --disable CONFIG_KSU_SUSFS
+    fi
+
+    # LXC
+    if is_true "$LXC"; then
+        info "Apply LXC patch"
+        patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/lxc_support.patch"
+    fi
+
+    if is_true "$STOCK_CONFIG"; then
+        info "Apply stock config patch"
+        patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/stock_config.patch"
+    fi
+
+    # Config Clang LTO
+    clang_lto "$CLANG_LTO"
 }

@@ -128,6 +128,9 @@ EOF
 }
 
 build_module() {
+    # Only needed for xaga module packaging.
+    validate_deps modules
+
     reset_dir "$MOD_FLAT"
     reset_dir "$MOD_STAGE"
 

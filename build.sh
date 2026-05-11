@@ -27,33 +27,72 @@ count() {
 }
 
 validate_env() {
-    info "Validating environment variables..."
-    if [[ -z ${GH_TOKEN:-} ]]; then
-        if [[ -x "$CLANG_BIN/clang" ]]; then
-            :
-        elif is_ci; then
-            error "Required Github PAT missing: GH_TOKEN"
-        else
-            warn "GH_TOKEN isn't set, requests may be rate-limited."
-        fi
-    fi
+    local stage="$1"
 
-    # Telegram checks
-    if is_true "$TG_NOTIFY"; then
-        : "${TG_BOT_TOKEN:?Required Telegram Bot Token missing: TG_BOT_TOKEN}"
-        : "${TG_CHAT_ID:?Required chat ID missing: TG_CHAT_ID}"
-        export TG_BOT_TOKEN
-        export TG_CHAT_ID
-    fi
+    case "$stage" in
+        github)
+            # before fetching github release assets
+            if [[ -z ${GH_TOKEN:-} ]]; then
+                if [[ -x "$CLANG_BIN/clang" && -f "$LIBFAKESTAT" ]]; then
+                    :
+                elif is_ci; then
+                    error "Required Github PAT missing: GH_TOKEN"
+                else
+                    warn "GH_TOKEN isn't set, requests may be rate-limited."
+                fi
+            fi
+            ;;
+        telegram)
+            # before sending telegram updates
+            if is_true "$TG_NOTIFY"; then
+                : "${TG_BOT_TOKEN:?Required Telegram Bot Token missing: TG_BOT_TOKEN}"
+                : "${TG_CHAT_ID:?Required chat ID missing: TG_CHAT_ID}"
+                export TG_BOT_TOKEN
+                export TG_CHAT_ID
+            fi
+            ;;
+        config)
+            # before build prep
+            if is_true "$SUSFS" && ! is_true "$KSU"; then
+                error "Cannot use SUSFS without KernelSU"
+            fi
 
-    # Config checks
-    if is_true "$SUSFS" && ! is_true "$KSU"; then
-        error "Cannot use SUSFS without KernelSU"
-    fi
+            if is_true "$LXC" && [[ $BUILD_TARGET != "xaga" ]]; then
+                error "LXC is not supported for $BUILD_TARGET target"
+            fi
+            ;;
+        *)
+            fatal "Unknown environment validation stage: $stage"
+            ;;
+    esac
+}
 
-    if is_true "$LXC" && [[ $BUILD_TARGET != "xaga" ]]; then
-        error "LXC is not supported for $BUILD_TARGET target"
-    fi
+validate_deps() {
+    local stage="$1"
+
+    case "$stage" in
+        base)
+            # before the build starts
+            require_cmds \
+                aria2c bash ccache chmod cp curl date find git head hexdump make mkdir \
+                python3 rm sed sha256sum sort tar tee uv zip zstd
+            ;;
+        patching)
+            # before applying patches
+            require_cmds patch
+            ;;
+        modules)
+            # before xaga module packaging
+            require_cmds depmod llvm-strip xz
+            ;;
+        bootimg)
+            # before generic boot image packaging
+            require_cmds gzip lz4 unzip
+            ;;
+        *)
+            fatal "Unknown dependency validation stage: $stage"
+            ;;
+    esac
 }
 
 main() {
@@ -62,7 +101,6 @@ main() {
 
     count init_build
     count init_logging
-    count validate_env
     count send_start_msg
     count prepare_dirs
     count fetch_sources

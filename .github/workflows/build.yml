@@ -19,7 +19,7 @@ on:
         type: boolean
         required: true
       STOCK_CONFIG:
-        type: boolean
+        type: string
         required: true
       TG_NOTIFY:
         type: boolean
@@ -56,8 +56,12 @@ on:
 
       STOCK_CONFIG:
         description: "Spoof stock config?"
-        default: true
-        type: boolean
+        default: auto
+        type: choice
+        options:
+          - auto
+          - true
+          - false
 
       TG_NOTIFY:
         description: "Telegram Notify"
@@ -89,7 +93,13 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -qq \
-            bc bison ccache curl flex git tar wget aria2 jq zip zstd upx build-essential python3-requests libfaketime lz4 just
+            bc bison ccache curl flex git tar wget aria2 jq zip zstd upx build-essential libfaketime lz4 just
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Python 3.14
+        run: uv python install 3.14
 
       - name: Compute ccache key
         run: |
