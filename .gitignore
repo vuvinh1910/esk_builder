@@ -4,6 +4,8 @@
 /boot_image/
 /clang/
 /kernel/
+/build/clang
+/build/ld.lld
 /anykernel3/
 /build-tools/
 /mkbootimg/
