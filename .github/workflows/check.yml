@@ -42,11 +42,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6.0.1
 
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version-file: "py/.python-version"
 
-      - name: Install python 3.14
-        run: uv python install 3.14
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.1.0
 
       - name: Sync python dependencies
         run: uv sync --project py --group dev

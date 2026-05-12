@@ -77,11 +77,13 @@ jobs:
         with:
           path: release_files
 
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version-file: "py/.python-version"
 
-      - name: Install Python 3.14
-        run: uv python install 3.14
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.1.0
 
       - name: Import build metadata
         run: |
@@ -160,7 +162,7 @@ jobs:
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: |
           UV_PROJECT="$GITHUB_WORKSPACE/py"
-        
+
           escape_md_v2() {
             python3 - "$*" <<'PY'
           import sys, re
@@ -178,5 +180,5 @@ jobs:
           [GitHub Release]($(escape_md_v2 "https://github.com/${{ env.RELEASE_REPO }}/releases/${{ env.RELEASE_TAG }}"))
           EOF
           )
-          
+
           printf '%s' "$message" | uv run --project "$UV_PROJECT" tools tg msg

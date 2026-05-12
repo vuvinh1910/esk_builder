@@ -95,11 +95,13 @@ jobs:
           sudo apt-get install -qq \
             bc bison ccache curl flex git tar wget aria2 jq zip zstd upx build-essential libfaketime lz4 just
 
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version-file: "py/.python-version"
 
-      - name: Install Python 3.14
-        run: uv python install 3.14
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.1.0
 
       - name: Compute ccache key
         run: |
