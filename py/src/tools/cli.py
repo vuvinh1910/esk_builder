@@ -47,6 +47,7 @@ def meta_write(
     out_dir: str,
     release_repo: str,
     release_branch: str,
+    kernel_commit: str,
 ) -> None:
     write_metadata(
         output,
@@ -59,6 +60,7 @@ def meta_write(
         out_dir,
         release_repo,
         release_branch,
+        kernel_commit,
     )
 
 

@@ -59,6 +59,8 @@ jobs:
       LXC: ${{ matrix.variant.LXC }}
       STOCK_CONFIG: auto
       TG_NOTIFY: false
+      IS_RELEASE: true
+
 
   release:
     name: Create Release
@@ -86,10 +88,17 @@ jobs:
         uses: astral-sh/setup-uv@v8.1.0
 
       - name: Import build metadata
+        env:
+          BUILD_TARGET: ${{ github.event.inputs.build_target }}
         run: |
           metadata_file="release_files/github-metadata-VNL/github.json"
           [[ -f "$metadata_file" ]] || { echo "::error::github.json missing"; exit 1; }
 
+          WORKSPACE="$GITHUB_WORKSPACE"
+          source "$WORKSPACE/config.sh"
+          source "$WORKSPACE/build/utils.sh"
+
+          kernel_commit="$(
           python3 - "$metadata_file" "$GITHUB_ENV" <<'PY'
           import json
           import sys
@@ -97,11 +106,22 @@ jobs:
           with open(sys.argv[1]) as f:
               data = json.load(f)
 
-          keys = ["kernel_name", "kernel_version", "toolchain", "release_repo", "release_branch"]
+          keys = [
+              "kernel_name",
+              "kernel_version",
+              "toolchain",
+              "release_repo",
+              "release_branch",
+              "kernel_commit",
+          ]
           with open(sys.argv[2], "a") as out:
               for key in keys:
                   out.write(f"{key.upper()}={data[key]}\n")
+
+          print(data["kernel_commit"])
           PY
+          )"
+          echo "KERNEL_COMMIT_URL=$(repo_spec "$KERNEL_REPO" github-commit-url "$kernel_commit")" >> "$GITHUB_ENV"
 
           # Filter metadata from release assets
           find release_files -type f -name '*.json' -delete
@@ -138,6 +158,7 @@ jobs:
             |------|-------|
             | **Kernel Name** | ${{ env.KERNEL_NAME }} |
             | **Kernel Version** | ${{ env.KERNEL_VERSION }} |
+            | **Kernel Commit** | [${{ env.KERNEL_COMMIT }}](${{ env.KERNEL_COMMIT_URL }}) |
             | **Compiler** | ${{ env.TOOLCHAIN }} |
 
             ### Variants Suffixes
@@ -177,6 +198,7 @@ jobs:
           📦 *$(escape_md_v2 "$KERNEL_NAME Release Build Completed!")*
 
           *Target:* $(escape_md_v2 "${{ github.event.inputs.build_target }}")
+          *Kernel Commit:* [$(escape_md_v2 "${{ env.KERNEL_COMMIT }}")]($(escape_md_v2 "${{ env.KERNEL_COMMIT_URL }}"))
           [GitHub Release]($(escape_md_v2 "https://github.com/${{ env.RELEASE_REPO }}/releases/${{ env.RELEASE_TAG }}"))
           EOF
           )

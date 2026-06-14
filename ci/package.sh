@@ -10,6 +10,9 @@ prepare_package_name() {
     is_true "$SUSFS" && VARIANT+="-SUSFS"
     is_true "$LXC" && VARIANT+="-LXC"
     PACKAGE_NAME="$KERNEL_NAME-$KERNEL_VERSION-$VARIANT"
+    if ! is_true "$IS_RELEASE"; then
+        PACKAGE_NAME+="-$KERNEL_COMMIT"
+    fi
 }
 
 package_anykernel() {
@@ -38,6 +41,10 @@ package_anykernel() {
 }
 
 package_bootimg() {
+    if [[ "$BUILD_TARGET" == "xaga" ]]; then
+        return
+    fi
+
     make_boot() {
         "$MKBOOTIMG/mkbootimg.py" \
             --header_version "4" \
@@ -55,10 +62,6 @@ package_bootimg() {
     }
 
     step "Package boot image"
-
-    if [[ "$BUILD_TARGET" == "xaga" ]]; then
-        return
-    fi
 
     # Only needed for generic boot image packaging.
     validate_deps bootimg
@@ -99,7 +102,8 @@ write_metadata() {
         "$META_FILE" \
         "$KERNEL_VERSION" "$KERNEL_NAME" "$COMPILER_STRING" \
         "$package_name" "$VARIANT" "$KERNEL_NAME" "$OUT_DIR" \
-        "$RELEASE_REPO" "$RELEASE_BRANCH"
+        "$RELEASE_REPO" "$RELEASE_BRANCH" \
+        "$KERNEL_COMMIT"
 }
 
 notify_success() {
@@ -107,6 +111,9 @@ notify_success() {
     local build_time="$2"
     # For indicating package type (boot image, anykernel3)
     local additional_tag="$3"
+
+    local kernel_commit_url
+    kernel_commit_url="$(repo_spec "$KERNEL_REPO" github-commit-url "$KERNEL_COMMIT")"
 
     local minutes=$((build_time / 60))
     local seconds=$((build_time % 60))
@@ -121,6 +128,7 @@ $(tg_run_line)
 *Target:* $(escape_md_v2 "$BUILD_TARGET")
 *Time:* $(escape_md_v2 "${minutes}m ${seconds}s")
 *Kernel:* $(escape_md_v2 "$KERNEL_VERSION")
+*Commit:* [$(escape_md_v2 "$KERNEL_COMMIT")]($(escape_md_v2 "$kernel_commit_url"))
 *Compiler:* $(escape_md_v2 "$COMPILER_STRING")
 *Features:* KSU $(parse_bool "$KSU"), SuSFS $(is_true "$SUSFS" && escape_md_v2 "$SUSFS_VERSION" || echo "Disabled"), LXC $(parse_bool "$LXC"), Stock config $(parse_bool "$STOCK_CONFIG")
 EOF

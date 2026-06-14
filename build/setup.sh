@@ -82,6 +82,7 @@ init_build() {
 
     TG_NOTIFY="$(resolve_bool "${TG_NOTIFY-}" "$TG_NOTIFY_DEFAULT")"
     RESET_SOURCES="$(resolve_bool "${RESET_SOURCES-}" "$RESET_SOURCES_DEFAULT")"
+    IS_RELEASE="$(resolve_bool "${IS_RELEASE-}" "$IS_RELEASE_DEFAULT")"
 
     # before the build starts
     validate_deps base
@@ -125,6 +126,8 @@ fetch_sources() {
 
     info "Cloning kernel source..."
     git_clone "$KERNEL_REPO" "$KERNEL"
+    KERNEL_COMMIT="$(git -C "$KERNEL" rev-parse --short=12 HEAD)"
+    info "Kernel commit: $KERNEL_COMMIT"
 
     info "Cloning AnyKernel3..."
     git_clone "$AK3_REPO" "$AK3"

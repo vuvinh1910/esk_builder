@@ -37,6 +37,7 @@ SUSFS_DEFAULT="false"
 LXC_DEFAULT="false"
 TG_NOTIFY_DEFAULT="false"
 RESET_SOURCES_DEFAULT="false"
+IS_RELEASE_DEFAULT="false"
 
 # Parallel build jobs (override: JOBS=16 ./build.sh)
 JOBS="${JOBS:-$(nproc --all)}"

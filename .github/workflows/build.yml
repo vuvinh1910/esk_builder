@@ -24,6 +24,11 @@ on:
       TG_NOTIFY:
         type: boolean
         required: true
+      IS_RELEASE:
+        type: boolean
+        required: false
+        default: false
+
 
   workflow_dispatch:
     inputs:
@@ -67,6 +72,12 @@ on:
         description: "Telegram Notify"
         default: true
         type: boolean
+
+      IS_RELEASE:
+        description: "Is release build?"
+        default: false
+        type: boolean
+
 
 env:
   DEBIAN_FRONTEND: noninteractive
@@ -129,6 +140,8 @@ jobs:
           LXC: ${{ inputs.LXC }}
           STOCK_CONFIG: ${{ inputs.STOCK_CONFIG }}
           TG_NOTIFY: ${{ inputs.TG_NOTIFY }}
+          IS_RELEASE: ${{ inputs.IS_RELEASE }}
+
         run: |
           just build
 

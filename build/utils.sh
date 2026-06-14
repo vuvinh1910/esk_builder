@@ -98,12 +98,33 @@ prune_bad_artifacts() {
         -print -delete
 }
 
+repo_spec() {
+    local source="$1"
+    local field="$2"
+    local commit="${3-}"
+    local host repo ref
+
+    IFS=':@' read -r host repo ref <<< "$source"
+
+    case "$field" in
+        host) printf '%s\n' "$host" ;;
+        repo) printf '%s\n' "$repo" ;;
+        ref) printf '%s\n' "$ref" ;;
+        github-commit-url) printf 'https://github.com/%s/commit/%s\n' "$repo" "$commit" ;;
+        *)
+            fatal "Unknown repo spec field: $field"
+            ;;
+    esac
+}
+
 # Shallow clone repository into a destination
 git_clone() {
     local source="$1"
     local dest="$2"
     local host repo branch url
-    IFS=':@' read -r host repo branch <<< "$source"
+    host="$(repo_spec "$source" host)"
+    repo="$(repo_spec "$source" repo)"
+    branch="$(repo_spec "$source" ref)"
 
     if [[ -d "$dest/.git" ]]; then
         git -C "$dest" clean -fdx -q

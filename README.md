@@ -162,6 +162,7 @@ just clean
 | JOBS            | set the make job count                       | integer                          | `nproc --all`                     |
 | RESET_SOURCES   | reset and re-clone source/tool dirs before build | boolean                      | `false` locally, `true` in ci     |
 | TG_NOTIFY       | send telegram updates                        | boolean                          | `false` locally, `true` in ci     |
+| IS_RELEASE      | flag the build as a release build            | boolean                          | `false`                           |
 | GH_TOKEN        | github token for release asset fetching      | token string                     | unset                             |
 | TG_BOT_TOKEN    | telegram bot token                           | token string                     | unset                             |
 | TG_CHAT_ID      | telegram chat id                             | chat id                          | unset                             |
@@ -184,5 +185,9 @@ notes:
 | out/\<package>-boot-raw.img   | generic raw boot image                  |
 | out/\<package>-boot-gz.img    | generic gzip boot image                 |
 | out/\<package>-boot-lz4.img   | generic lz4 boot image                  |
-| github.json                   | release metadata written by the python helper |
+| github.json                   | release metadata written by the python helper, including the kernel commit |
 | build.log                     | build log                               |
+
+where `<package>` has the format `${KERNEL_NAME}-${KERNEL_VERSION}-${VARIANT}` (with `-${KERNEL_COMMIT}` appended when `IS_RELEASE` is not `true`).
+
+

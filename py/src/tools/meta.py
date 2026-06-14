@@ -14,6 +14,7 @@ def write_metadata(
     out_dir: str,
     release_repo: str,
     release_branch: str,
+    kernel_commit: str,
 ) -> None:
     payload = {
         "kernel_version": kernel_version,
@@ -25,5 +26,6 @@ def write_metadata(
         "out_dir": out_dir,
         "release_repo": release_repo,
         "release_branch": release_branch,
+        "kernel_commit": kernel_commit,
     }
     write_json_file(output, payload)
