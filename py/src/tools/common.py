@@ -1,10 +1,12 @@
 import json
 import os
+import re
 import sys
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import NoReturn
 
 import requests
+from pydantic import BaseModel
 
 
 def die(reason: str) -> NoReturn:
@@ -26,12 +28,16 @@ def stdin_text() -> str:
     return text
 
 
-def write_json_file(path: Path, payload: dict[str, Any]) -> None:
-    text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+def escape_md_v2(text: str) -> str:
+    return re.sub(r"([\\_*[\]()~`>#+\-=|{}.!])", r"\\\1", text)
+
+
+def write_json_file(path: Path, payload: BaseModel) -> None:
+    text = json.dumps(payload.model_dump(mode="json"), indent=2, sort_keys=True) + "\n"
     path.write_text(text)
 
 
-def get_json(url: str, token_env: str = "GH_TOKEN") -> Any:
+def get_json_text(url: str, token_env: str = "GH_TOKEN") -> str:
     headers: dict[str, str] = {
         "Accept": "application/vnd.github+json",
     }
@@ -45,7 +51,4 @@ def get_json(url: str, token_env: str = "GH_TOKEN") -> Any:
     except requests.RequestException as e:
         die(f"GET {url} failed: {e}")
 
-    try:
-        return response.json()
-    except ValueError as e:
-        die(f"GET {url} did not return valid JSON: {e}")
+    return response.text

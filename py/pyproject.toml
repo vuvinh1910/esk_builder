@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Python helpers for esk_builder"
 requires-python = ">=3.14"
 dependencies = [
+    "pydantic>=2.13.4",
     "requests>=2.32.0",
     "typer>=0.12.0",
 ]
@@ -33,3 +34,7 @@ exclude = ["**/__pycache__"]
 pythonVersion = "3.14"
 pythonPlatform = "Linux"
 typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
+reportMissingImports = "warning"
+reportMissingModuleSource = "warning"

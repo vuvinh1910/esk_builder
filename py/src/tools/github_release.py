@@ -1,8 +1,9 @@
 import fnmatch
-import json
-from typing import Any
 
-from .common import die, get_json
+from pydantic import TypeAdapter, ValidationError
+
+from .common import die, get_json_text
+from .models import GitHubRelease
 
 
 def parse_tag(tag: str) -> tuple[int, int]:
@@ -13,21 +14,11 @@ def parse_tag(tag: str) -> tuple[int, int]:
     return int(major), int(minor)
 
 
-def asset_url(data: dict[str, Any], pattern: str) -> str:
-    assets = data.get("assets")
-    if not isinstance(assets, list):
-        die("GitHub release JSON does not contain an assets list")
-
+def asset_url(data: GitHubRelease, pattern: str) -> str:
     matches: list[tuple[str, str]] = []
-    for asset in assets:
-        if not isinstance(asset, dict):
-            continue
-        name = asset.get("name")
-        url = asset.get("browser_download_url")
-        if not isinstance(name, str) or not isinstance(url, str):
-            continue
-        if fnmatch.fnmatch(name, pattern):
-            matches.append((name, url))
+    for asset in data.assets:
+        if fnmatch.fnmatch(asset.name, pattern):
+            matches.append((asset.name, asset.browser_download_url))
 
     if not matches:
         die(f"No release asset found matching pattern: {pattern}")
@@ -41,26 +32,30 @@ def asset_url(data: dict[str, Any], pattern: str) -> str:
 
 def asset_url_json(stdin_text: str, pattern: str) -> str:
     try:
-        data: dict[str, Any] = json.loads(stdin_text)
-    except json.JSONDecodeError as e:
+        data = GitHubRelease.model_validate_json(stdin_text)
+    except ValidationError as e:
         die(f"Invalid GitHub release JSON: {e}")
 
     return asset_url(data, pattern)
 
 
 def asset_url_api(api_url: str, pattern: str) -> str:
-    data = get_json(api_url)
-    if not isinstance(data, dict):
-        die("GitHub release API did not return a release object")
+    try:
+        data = GitHubRelease.model_validate_json(get_json_text(api_url))
+    except ValidationError as e:
+        die(f"GitHub release API did not return a valid release object: {e}")
     return asset_url(data, pattern)
 
 
 def next_tag(repo: str) -> str:
-    data = get_json(f"https://api.github.com/repos/{repo}/releases?per_page=100")
-    if not isinstance(data, list):
-        die("GitHub releases API did not return a release list")
+    try:
+        data = TypeAdapter(list[GitHubRelease]).validate_json(
+            get_json_text(f"https://api.github.com/repos/{repo}/releases?per_page=100")
+        )
+    except ValidationError as e:
+        die(f"GitHub releases API did not return a valid release list: {e}")
 
-    tags = [item["tag_name"] for item in data if isinstance(item, dict) and item.get("tag_name")]
+    tags = [item.tag_name for item in data if item.tag_name]
 
     if not tags:
         return "v1.0"

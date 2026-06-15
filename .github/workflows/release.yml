@@ -185,12 +185,7 @@ jobs:
           UV_PROJECT="$GITHUB_WORKSPACE/py"
 
           escape_md_v2() {
-            python3 - "$*" <<'PY'
-          import sys, re
-          s = sys.argv[1]
-          escaped = re.sub(r'([\\_*[\]()~`>#+\-=|{}.!])', r'\\\1', s)
-          print(escaped, end="")
-          PY
+            uv run --project "$UV_PROJECT" tools util escape-md-v2 "$*"
           }
 
           message=$(

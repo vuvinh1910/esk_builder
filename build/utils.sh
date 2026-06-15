@@ -36,14 +36,7 @@ github_release_asset_url() {
 
 # Escape text for MarkdownV2
 escape_md_v2() {
-    python3 - "$*" << 'PY'
-import re
-import sys
-
-s = sys.argv[1]
-escaped = re.sub(r'([\\_*[\]()~`>#+\-=|{}.!])', r'\\\1', s)
-print(escaped, end="")
-PY
+    py_cli util escape-md-v2 "$*"
 }
 
 # Boolean helpers

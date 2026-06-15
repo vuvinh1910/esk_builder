@@ -3,7 +3,7 @@ from typing import Annotated
 
 import typer
 
-from .common import stdin_text
+from .common import escape_md_v2, stdin_text
 from .github_release import asset_url_api, asset_url_json, next_tag
 from .meta import write_metadata
 from .tg import send_document, send_message
@@ -12,10 +12,12 @@ app = typer.Typer(no_args_is_help=True)
 release_app = typer.Typer(no_args_is_help=True)
 meta_app = typer.Typer(no_args_is_help=True)
 tg_app = typer.Typer(no_args_is_help=True)
+util_app = typer.Typer(no_args_is_help=True)
 
 app.add_typer(release_app, name="release")
 app.add_typer(meta_app, name="meta")
 app.add_typer(tg_app, name="tg")
+app.add_typer(util_app, name="util")
 
 
 @release_app.command("asset-url")
@@ -74,9 +76,10 @@ def tg_doc(file: Path) -> None:
     send_document(file, stdin_text())
 
 
-def main() -> None:
-    app()
+@util_app.command("escape-md-v2")
+def util_escape_md_v2(text: Annotated[str, typer.Argument()]) -> None:
+    typer.echo(escape_md_v2(text), nl=False)
 
 
 if __name__ == "__main__":
-    main()
+    app()
