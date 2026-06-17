@@ -3,10 +3,6 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 alias b := build
 alias f := fmt
 alias g := generic
-alias gd := git-diff
-alias gl := git-log
-alias gs := git-status
-alias gsh := git-show
 alias x := xaga
 
 default:
@@ -31,18 +27,6 @@ py-check:
     cd py && uv run python -m basedpyright src
 
 check: fmt-check bash-check lint py-lint py-check
-
-git-status:
-    git status --short --branch
-
-git-diff *args:
-    git diff {{args}}
-
-git-log limit="20":
-    git log --oneline --decorate --graph -n {{limit}}
-
-git-show ref="HEAD":
-    git show --stat --patch {{ref}}
 
 build *args:
     env {{args}} ./build.sh
