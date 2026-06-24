@@ -228,6 +228,10 @@ prepare_build() {
                 ksu_repo="ReSukiSU/ReSukiSU"
                 ksu_ref="main"
                 ;;
+            sukiultra)
+                ksu_repo="SukiSU-Ultra/SukiSU-Ultra"
+                ksu_ref="main"
+                ;;
             ksunext)
                 ksu_repo="KernelSU-Next/KernelSU-Next"
                 ksu_ref="dev"
