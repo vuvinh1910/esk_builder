@@ -28,6 +28,10 @@ on:
         type: boolean
         required: false
         default: false
+      KSU_VARIANT:
+        type: string
+        required: false
+        default: resukisu
 
 
   workflow_dispatch:
@@ -77,6 +81,14 @@ on:
         description: "Is release build?"
         default: false
         type: boolean
+
+      KSU_VARIANT:
+        description: "KernelSU variant"
+        default: resukisu
+        type: choice
+        options:
+          - resukisu
+          - ksunext
 
 
 env:
@@ -141,6 +153,7 @@ jobs:
           STOCK_CONFIG: ${{ inputs.STOCK_CONFIG }}
           TG_NOTIFY: ${{ inputs.TG_NOTIFY }}
           IS_RELEASE: ${{ inputs.IS_RELEASE }}
+          KSU_VARIANT: ${{ inputs.KSU_VARIANT }}
 
         run: |
           just build

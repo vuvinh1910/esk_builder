@@ -38,6 +38,7 @@ LXC_DEFAULT="false"
 TG_NOTIFY_DEFAULT="false"
 RESET_SOURCES_DEFAULT="false"
 IS_RELEASE_DEFAULT="false"
+KSU_VARIANT_DEFAULT="resukisu"
 
 # Parallel build jobs (override: JOBS=16 ./build.sh)
 JOBS="${JOBS:-$(nproc --all)}"

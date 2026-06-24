@@ -83,6 +83,7 @@ init_build() {
     TG_NOTIFY="$(resolve_bool "${TG_NOTIFY-}" "$TG_NOTIFY_DEFAULT")"
     RESET_SOURCES="$(resolve_bool "${RESET_SOURCES-}" "$RESET_SOURCES_DEFAULT")"
     IS_RELEASE="$(resolve_bool "${IS_RELEASE-}" "$IS_RELEASE_DEFAULT")"
+    KSU_VARIANT="${KSU_VARIANT:-$KSU_VARIANT_DEFAULT}"
 
     # before the build starts
     validate_deps base
@@ -221,8 +222,22 @@ prepare_build() {
     fi
 
     if is_true "$KSU"; then
-        info "Setup KernelSU"
-        install_ksu "ESK-Project/ReSukiSU" "main"
+        local ksu_repo ksu_ref
+        case "$KSU_VARIANT" in
+            resukisu)
+                ksu_repo="ReSukiSU/ReSukiSU"
+                ksu_ref="main"
+                ;;
+            ksunext)
+                ksu_repo="KernelSU-Next/KernelSU-Next"
+                ksu_ref="dev"
+                ;;
+            *)
+                error "Unknown KSU_VARIANT: ${KSU_VARIANT}"
+                ;;
+        esac
+        info "Setup KernelSU ($ksu_repo@$ksu_ref)"
+        install_ksu "$ksu_repo" "$ksu_ref"
         config --enable CONFIG_KSU
         success "KernelSU added"
     fi
